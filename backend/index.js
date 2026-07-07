@@ -2,6 +2,18 @@ require('dotenv').config();
 const { initializeApp } = require('firebase/app');
 const { getDatabase, ref, onValue, set, get, push } = require('firebase/database');
 const Groq = require('groq-sdk');
+const http = require('http');
+
+// Simple HTTP server for Render Web Service Port Binding
+const PORT = process.env.PORT || 3000;
+const server = http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('Fitcheck AI Service is running.\n');
+});
+
+server.listen(PORT, () => {
+  console.log(`Health check server listening on port ${PORT}`);
+});
 
 // 1. Firebase configuration
 const firebaseConfig = {
