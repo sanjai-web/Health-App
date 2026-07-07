@@ -72,26 +72,9 @@ onValue(healthRecordsRef, (snapshot) => {
 setInterval(async () => {
   if (isProcessing) return;
 
-  // If no new readings arrived, fetch the current state to check if we should run an evaluation
+  // If no new readings arrived in the last 10 seconds, exit early to save token quota
   if (readingsBuffer.length === 0) {
-    try {
-      const snapshot = await get(healthRecordsRef);
-      const record = snapshot.val();
-      if (record && record.heartRate) {
-        readingsBuffer.push({
-          heartRate: record.heartRate,
-          bodyTemperature: record.bodyTemperature,
-          spo2: record.spo2,
-          perfusionIndex: record.perfusionIndex,
-          timestamp: record.timestamp || new Date().toISOString()
-        });
-      } else {
-        return; // No data available anywhere
-      }
-    } catch (err) {
-      console.error('Failed to query database state in interval:', err);
-      return;
-    }
+    return;
   }
 
   isProcessing = true;
@@ -140,7 +123,7 @@ Conditions: ${profile.conditions}
 ${formattedReadings}`
         }
       ],
-      model: 'llama-3.3-70b-versatile',
+      model: 'llama-3.1-8b-instant',
       temperature: 0.1,
       response_format: { type: 'json_object' }
     });
