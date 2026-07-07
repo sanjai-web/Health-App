@@ -15,7 +15,8 @@
       "fallbackToCacheTimeout": 0
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sanjai8405.fitcheck"
     },
     "android": {
       "adaptiveIcon": {
