@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "805963694011",
+    "firebase_url": "https://in-1-health-check-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "in-1-health-check",
+    "storage_bucket": "in-1-health-check.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:805963694011:android:30dcc5640fe9e5e3844e9e",
+        "android_client_info": {
+          "package_name": "health.check.com"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCBLdEB43paTY-KoElImBaX5NSK9Qlef_U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
