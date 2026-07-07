@@ -3,7 +3,6 @@
     "name": "fitcheck",
     "slug": "fitcheck",
     "version": "1.0.0",
-    "jsEngine": "jsc",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -20,12 +19,9 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#000000"
       },
-      "predictiveBackGestureEnabled": false,
       "package": "com.sanjai_8405.fitcheck"
     },
     "web": {
