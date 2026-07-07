@@ -25,10 +25,17 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.sanjai_8405.fitcheck"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "adfc7af7-b2bc-442f-b8b9-7a83b1aa2a72"
+      }
+    },
+    "owner": "sanjai_8405"
   }
 }
