@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import AppNavigator from './src/navigation/AppNavigator';
 import { ThemeContext, ThemeMode } from './src/hooks/useTheme';
 import { Colors, Gradients, Shadows } from './src/constants/theme';
+import EmergencyAlertModal from './src/components/emergency/EmergencyAlertModal';
 
 export default function App() {
   const [mode, setMode] = useState<ThemeMode>('light');
@@ -29,6 +30,7 @@ export default function App() {
           <NavigationContainer>
             <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
             <AppNavigator />
+            <EmergencyAlertModal />
           </NavigationContainer>
         </SafeAreaProvider>
       </GestureHandlerRootView>

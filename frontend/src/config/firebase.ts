@@ -12,8 +12,10 @@
  * was never executed in that same bundle evaluation.
  */
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { initializeAuth, inMemoryPersistence, getAuth } from 'firebase/auth';
+// @ts-ignore
+import { initializeAuth, getReactNativePersistence, getAuth } from 'firebase/auth';
 import { getDatabase } from 'firebase/database';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyCBLdEB43paTY-KoElImBaX5NSK9Qlef_U',
@@ -29,13 +31,15 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
 // Initialize Auth — if already initialized by a previous bundle, getAuth() returns it.
 // If not yet initialized (fresh bundle context), initializeAuth registers it.
-let auth;
+let auth: any;
 try {
   // Try getting the already-initialized auth instance first
   auth = getAuth(app);
 } catch {
-  // Not yet initialized in this context — register it now
-  auth = initializeAuth(app, { persistence: inMemoryPersistence });
+  // Not yet initialized in this context — register it now with AsyncStorage persistence
+  auth = initializeAuth(app, {
+    persistence: getReactNativePersistence(AsyncStorage),
+  });
 }
 
 // Initialize Realtime Database singleton

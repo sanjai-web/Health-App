@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Dimensions, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -16,6 +16,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { StatusBar } from 'expo-status-bar';
 import { auth } from '../../config/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 const { width, height } = Dimensions.get('window');
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Splash'>;
@@ -47,13 +48,9 @@ export default function SplashScreen() {
   const glowScale = useSharedValue(1);
   const dotsOpacity = useSharedValue(0);
 
-  const navigate = () => {
-    if (auth.currentUser) {
-      navigation.replace('Main');
-    } else {
-      navigation.replace('Onboarding');
-    }
-  };
+  const [timerFinished, setTimerFinished] = useState(false);
+  const [authLoaded, setAuthLoaded] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     // Logo animation
@@ -78,10 +75,33 @@ export default function SplashScreen() {
     // Dots
     dotsOpacity.value = withDelay(1600, withTiming(1, { duration: 400 }));
 
-    // Navigate after 2.8s
-    const timer = setTimeout(() => navigate(), 2800);
-    return () => clearTimeout(timer);
+    // Timer for splash screen display duration (2.8s)
+    const timer = setTimeout(() => {
+      setTimerFinished(true);
+    }, 2800);
+
+    // Listen to Firebase authentication status loading
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setAuthLoaded(true);
+    });
+
+    return () => {
+      clearTimeout(timer);
+      unsubscribe();
+    };
   }, []);
+
+  // Perform routing decision once animation timer has passed AND firebase auth is resolved
+  useEffect(() => {
+    if (timerFinished && authLoaded) {
+      if (user) {
+        navigation.replace('Main');
+      } else {
+        navigation.replace('Onboarding');
+      }
+    }
+  }, [timerFinished, authLoaded, user]);
 
   const logoStyle = useAnimatedStyle(() => ({
     opacity: logoOpacity.value,
