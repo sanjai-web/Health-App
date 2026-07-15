@@ -143,8 +143,15 @@ onValue(healthRecordsRef, (snapshot) => {
   const record = snapshot.val();
   if (!record) return;
 
-  const { heartRate, bodyTemperature, spo2, perfusionIndex, timestamp } = record;
-  if (!heartRate || !bodyTemperature || !spo2 || !perfusionIndex) {
+  const { heartRate, bodyTemperature, perfusionIndex, timestamp } = record;
+  const rawSpo2 = record.sp02 !== undefined ? record.sp02 : record.spo2;
+
+  if (
+    heartRate === undefined || heartRate === null ||
+    bodyTemperature === undefined || bodyTemperature === null ||
+    rawSpo2 === undefined || rawSpo2 === null ||
+    perfusionIndex === undefined || perfusionIndex === null
+  ) {
     return;
   }
 
@@ -153,7 +160,7 @@ onValue(healthRecordsRef, (snapshot) => {
     lastBufferedReading &&
     lastBufferedReading.heartRate === heartRate &&
     lastBufferedReading.bodyTemperature === bodyTemperature &&
-    lastBufferedReading.spo2 === spo2 &&
+    lastBufferedReading.spo2 === rawSpo2 &&
     lastBufferedReading.perfusionIndex === perfusionIndex
   ) {
     return;
@@ -162,14 +169,14 @@ onValue(healthRecordsRef, (snapshot) => {
   const newReading = {
     heartRate,
     bodyTemperature,
-    spo2,
+    spo2: rawSpo2,
     perfusionIndex,
     timestamp: timestamp || new Date().toISOString()
   };
 
   readingsBuffer.push(newReading);
   lastBufferedReading = newReading;
-  console.log(`[Vitals Buffered] HR: ${heartRate} BPM | Temp: ${bodyTemperature}°C | SpO2: ${spo2}% | PI: ${perfusionIndex}%`);
+  console.log(`[Vitals Buffered] HR: ${heartRate} BPM | Temp: ${bodyTemperature}°C | SpO2: ${rawSpo2}% | PI: ${perfusionIndex}%`);
 });
 
 // 4. Interval Evaluator: Runs every 10 seconds
@@ -334,6 +341,7 @@ ${formattedReadings}`
       bodyTemperature: latestReading.bodyTemperature,
       heartRate: latestReading.heartRate,
       spo2: latestReading.spo2,
+      sp02: latestReading.spo2, // Dual-write for physical hardware compatibility
       perfusionIndex: latestReading.perfusionIndex,
       timestamp: new Date().toISOString()
     });

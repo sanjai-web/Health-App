@@ -17,10 +17,8 @@ class HealthService {
    * Subscribe to live real-time updates from Firebase.
    */
   subscribeToLatest(callback: RealtimeCallback): () => void {
-    const uid = auth.currentUser?.uid;
-    
-    // Subscribe to the authenticated user's latest vitals (vital signs + AI evaluation)
-    const path = uid ? `users/${uid}/latest_vitals` : 'health_records';
+    // Subscribe directly to the global 'health_records' node for all users
+    const path = 'health_records';
     const healthRef = ref(db, path);
     
     // Subscribe using the Firebase SDK
@@ -29,7 +27,14 @@ class HealthService {
       if (record) {
         callback({
           id: 'latest',
-          ...record
+          bodyTemperature: record.bodyTemperature,
+          healthRiskScore: record.healthRiskScore,
+          heartRate: record.heartRate,
+          perfusionIndex: record.perfusionIndex,
+          riskLevel: record.riskLevel,
+          spo2: record.sp02 !== undefined ? record.sp02 : record.spo2,
+          signalStrength: record.signalStrength !== undefined ? record.signalStrength : 95,
+          timestamp: record.timestamp || new Date().toISOString()
         });
       }
     }, (error) => {
@@ -40,32 +45,46 @@ class HealthService {
   }
 
   async getLatestRecord(): Promise<HealthRecord> {
-    const uid = auth.currentUser?.uid;
-    
-    const path = uid ? `users/${uid}/latest_vitals` : 'health_records';
+    const path = 'health_records';
     const healthRef = ref(db, path);
     const snapshot = await get(healthRef);
     if (snapshot.exists()) {
+      const record = snapshot.val();
       return {
         id: 'latest',
-        ...snapshot.val()
+        bodyTemperature: record.bodyTemperature,
+        healthRiskScore: record.healthRiskScore,
+        heartRate: record.heartRate,
+        perfusionIndex: record.perfusionIndex,
+        riskLevel: record.riskLevel,
+        spo2: record.sp02 !== undefined ? record.sp02 : record.spo2,
+        signalStrength: record.signalStrength !== undefined ? record.signalStrength : 95,
+        timestamp: record.timestamp || new Date().toISOString()
       } as HealthRecord;
     }
     throw new Error('No health records found.');
   }
 
   async getAllRecords(): Promise<HealthRecord[]> {
-    const uid = auth.currentUser?.uid;
-    
-    const path = uid ? `users/${uid}/history` : 'history';
+    const path = 'history';
     const historyRef = ref(db, path);
     const snapshot = await get(historyRef);
     if (snapshot.exists()) {
       const rawData = snapshot.val();
-      const records: HealthRecord[] = Object.keys(rawData).map(key => ({
-        id: key,
-        ...rawData[key],
-      }));
+      const records: HealthRecord[] = Object.keys(rawData).map(key => {
+        const record = rawData[key];
+        return {
+          id: key,
+          bodyTemperature: record.bodyTemperature,
+          healthRiskScore: record.healthRiskScore,
+          heartRate: record.heartRate,
+          perfusionIndex: record.perfusionIndex,
+          riskLevel: record.riskLevel,
+          spo2: record.sp02 !== undefined ? record.sp02 : record.spo2,
+          signalStrength: record.signalStrength !== undefined ? record.signalStrength : 95,
+          timestamp: record.timestamp || new Date().toISOString()
+        };
+      });
       // Return records sorted by timestamp descending
       return records.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     }
@@ -73,15 +92,21 @@ class HealthService {
   }
 
   async getRecordById(id: string): Promise<HealthRecord | null> {
-    const uid = auth.currentUser?.uid;
-    
-    const path = uid ? `users/${uid}/history/${id}` : `history/${id}`;
+    const path = `history/${id}`;
     const historyRef = ref(db, path);
     const snapshot = await get(historyRef);
     if (snapshot.exists()) {
+      const record = snapshot.val();
       return {
         id,
-        ...snapshot.val()
+        bodyTemperature: record.bodyTemperature,
+        healthRiskScore: record.healthRiskScore,
+        heartRate: record.heartRate,
+        perfusionIndex: record.perfusionIndex,
+        riskLevel: record.riskLevel,
+        spo2: record.sp02 !== undefined ? record.sp02 : record.spo2,
+        signalStrength: record.signalStrength !== undefined ? record.signalStrength : 95,
+        timestamp: record.timestamp || new Date().toISOString()
       } as HealthRecord;
     }
     return null;
