@@ -14,6 +14,7 @@ import MedicalReportScreen from '../screens/Detail/MedicalReportScreen';
 import NotificationsScreen from '../screens/Detail/NotificationsScreen';
 import ProfileScreen from '../screens/Detail/ProfileScreen';
 import VitalsDetailScreen from '../screens/Detail/VitalsDetailScreen';
+import UploadReportScreen from '../screens/Detail/UploadReportScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -37,6 +38,7 @@ export default function AppNavigator() {
       <Stack.Screen name="MedicalReport" component={MedicalReportScreen} options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="Profile" component={ProfileScreen} options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="UploadReport" component={UploadReportScreen} options={{ animation: 'slide_from_right' }} />
     </Stack.Navigator>
   );
 }

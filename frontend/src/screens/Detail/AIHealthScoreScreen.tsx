@@ -9,6 +9,7 @@ import { getRiskScoreTrend } from '../../constants/mockData';
 import LineChart from '../../components/charts/LineChart';
 import { StatusBar } from 'expo-status-bar';
 import { Brain, Zap, Shield, AlertTriangle, XCircle } from 'lucide-react-native';
+import { getHeartRateStatus, getTemperatureStatus, getSpO2Status, getPIStatus } from '../../utils/clinicalRanges';
 
 export default function AIHealthScoreScreen() {
   const { colors, isDark } = useTheme();
@@ -21,11 +22,11 @@ export default function AIHealthScoreScreen() {
     score < 30 ? '#10B981' : score < 60 ? '#F59E0B' : score < 80 ? '#EF4444' : '#7C3AED';
 
   const factors = [
-    { label: 'Heart Rate', score: 74, max: 100, color: '#FF6B8A', status: 'Optimal' },
-    { label: 'SpO₂', score: 98, max: 100, color: '#00D4FF', status: 'Excellent' },
-    { label: 'Temperature', score: 36.8, max: 42, color: '#FF9500', status: 'Normal' },
-    { label: 'Perfusion Index', score: 5.4, max: 10, color: '#8B5CF6', status: 'Normal' },
-    { label: 'Signal Quality', score: 98, max: 100, color: '#10B981', status: 'Strong' },
+    { label: 'Heart Rate', score: data?.heartRate ?? 74, max: 150, color: '#FF6B8A', status: data ? getHeartRateStatus(data.heartRate).statusLabel : 'Optimal' },
+    { label: 'SpO₂', score: data?.spo2 ?? 98, max: 100, color: '#00D4FF', status: data ? getSpO2Status(data.spo2).statusLabel : 'Excellent' },
+    { label: 'Temperature', score: data?.bodyTemperature ?? 36.8, max: 42, color: '#FF9500', status: data ? getTemperatureStatus(data.bodyTemperature).statusLabel : 'Normal' },
+    { label: 'Perfusion Index', score: data?.perfusionIndex ?? 5.4, max: 20, color: '#8B5CF6', status: data ? getPIStatus(data.perfusionIndex).statusLabel : 'Normal' },
+    { label: 'Signal Quality', score: data?.signalStrength ?? 98, max: 100, color: '#10B981', status: 'Strong' },
   ];
 
   const chartW = 340;

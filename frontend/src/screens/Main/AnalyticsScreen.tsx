@@ -7,10 +7,6 @@ import { useAllHealthRecords } from '../../hooks/useHealthData';
 import LineChart from '../../components/charts/LineChart';
 import BarChart from '../../components/charts/BarChart';
 import DonutChart from '../../components/charts/DonutChart';
-import {
-  getHeartRateTrend, getTemperatureTrend, getSpO2Trend,
-  getRiskScoreTrend, getPerfusionTrend,
-} from '../../constants/mockData';
 import { CardSkeleton } from '../../components/common/Skeleton';
 import { StatusBar } from 'expo-status-bar';
 
@@ -21,15 +17,73 @@ const TABS = ['Overview', 'Vitals', 'Risk'];
 
 export default function AnalyticsScreen() {
   const { colors, isDark } = useTheme();
-  const { loading } = useAllHealthRecords();
+  const { data, loading } = useAllHealthRecords();
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState(0);
 
-  const hrTrend = getHeartRateTrend();
-  const tempTrend = getTemperatureTrend();
-  const spo2Trend = getSpO2Trend();
-  const riskTrend = getRiskScoreTrend();
-  const piTrend = getPerfusionTrend();
+  // 1. Check if we have records
+  const hasData = data && data.length > 0;
+  const totalCount = data.length;
+
+  // 2. Chronological order for latest 7 readings in charts
+  const last7 = data.slice(0, 7).reverse();
+
+  // 3. Helper to format timestamp date
+  const formatShortDate = (iso: string): string => {
+    try {
+      const d = new Date(iso);
+      return `${d.getMonth() + 1}/${d.getDate()}`;
+    } catch {
+      return '';
+    }
+  };
+
+  // 4. Calculate averages & metrics
+  const avgHeartRate = hasData
+    ? Math.round(data.reduce((acc, r) => acc + (r.heartRate || 0), 0) / totalCount)
+    : 0;
+
+  const avgSpO2 = hasData
+    ? (data.reduce((acc, r) => acc + (r.spo2 || 0), 0) / totalCount).toFixed(1)
+    : '0';
+
+  const avgRiskScore = hasData
+    ? (data.reduce((acc, r) => acc + (r.healthRiskScore || 0), 0) / totalCount).toFixed(1)
+    : '0';
+
+  const peakRiskScore = hasData
+    ? Math.max(...data.map(r => r.healthRiskScore || 0))
+    : 0;
+
+  const lowestRiskScore = hasData
+    ? Math.min(...data.map(r => r.healthRiskScore || 0))
+    : 0;
+
+  // 5. Risk Distribution Count & Percentages
+  const lowCount = data.filter(r => r.riskLevel === 'Low').length;
+  const modCount = data.filter(r => r.riskLevel === 'Moderate' || r.riskLevel === 'Medium').length;
+  const highCount = data.filter(r => r.riskLevel === 'High').length;
+
+  const lowPercent = hasData ? Math.round((lowCount / totalCount) * 100) : 0;
+  const modPercent = hasData ? Math.round((modCount / totalCount) * 100) : 0;
+  const highPercent = hasData ? Math.max(0, 100 - lowPercent - modPercent) : 0;
+
+  const donutSegments = [];
+  if (lowPercent > 0) donutSegments.push({ value: lowPercent, color: '#10B981', label: 'Low' });
+  if (modPercent > 0) donutSegments.push({ value: modPercent, color: '#F59E0B', label: 'Moderate' });
+  if (highPercent > 0) donutSegments.push({ value: highPercent, color: '#EF4444', label: 'High' });
+
+  // Fallback segment if no data exists
+  if (donutSegments.length === 0) {
+    donutSegments.push({ value: 100, color: colors.cardBorder, label: 'No Data' });
+  }
+
+  // 6. Map trends
+  const hrTrend = last7.map(r => ({ value: r.heartRate || 0, label: formatShortDate(r.timestamp) }));
+  const tempTrend = last7.map(r => ({ value: r.bodyTemperature || 0, label: formatShortDate(r.timestamp) }));
+  const spo2Trend = last7.map(r => ({ value: r.spo2 || 0, label: formatShortDate(r.timestamp) }));
+  const piTrend = last7.map(r => ({ value: r.perfusionIndex || 0, label: formatShortDate(r.timestamp) }));
+  const riskTrend = last7.map(r => ({ value: r.healthRiskScore || 0, label: formatShortDate(r.timestamp) }));
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -44,7 +98,7 @@ export default function AnalyticsScreen() {
           Analytics
         </Text>
         <Text style={{ fontSize: 13, color: colors.textMuted, marginTop: 2 }}>
-          7-day trend overview
+          7-reading trend overview
         </Text>
       </LinearGradient>
 
@@ -72,13 +126,20 @@ export default function AnalyticsScreen() {
             <CardSkeleton height={220} />
             <CardSkeleton height={220} />
           </>
+        ) : !hasData ? (
+          <View style={[styles.emptyContainer, { borderColor: colors.cardBorder, backgroundColor: colors.card }]}>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>No Diagnostic Data Yet</Text>
+            <Text style={[styles.emptyDesc, { color: colors.textMuted }]}>
+              There are no health records to evaluate. Complete a vital signs measurement on the home dashboard screen to generate clinical trends and charts.
+            </Text>
+          </View>
         ) : activeTab === 0 ? (
           <>
             {/* Heart Rate + SpO2 side-by-side stat cards */}
             <View style={{ flexDirection: 'row', gap: 12 }}>
               {[
-                { label: 'Avg Heart Rate', value: '74', unit: 'BPM', color: '#FF6B8A' },
-                { label: 'Avg SpO₂', value: '97.4', unit: '%', color: '#00D4FF' },
+                { label: 'Avg Heart Rate', value: `${avgHeartRate}`, unit: 'BPM', color: '#FF6B8A' },
+                { label: 'Avg SpO₂', value: `${avgSpO2}`, unit: '%', color: '#00D4FF' },
               ].map((s, i) => (
                 <LinearGradient key={i} colors={isDark ? ['#1E2D3D', '#111827'] : ['#FFF', '#F8FAFC']}
                   style={[styles.statCard, { borderColor: colors.cardBorder }]}>
@@ -112,12 +173,9 @@ export default function AnalyticsScreen() {
               <Text style={{ fontSize: 11, color: colors.textMuted, marginBottom: 12 }}>Reading classification breakdown</Text>
               <View style={{ alignItems: 'center' }}>
                 <DonutChart
-                  data={[
-                    { value: 86, color: '#10B981', label: 'Low' },
-                    { value: 14, color: '#F59E0B', label: 'Moderate' },
-                  ]}
+                  data={donutSegments}
                   size={160}
-                  centerLabel="86%"
+                  centerLabel={`${lowPercent}%`}
                   centerSublabel="Low Risk"
                 />
               </View>
@@ -151,15 +209,15 @@ export default function AnalyticsScreen() {
               <BarChart data={riskTrend} width={CHART_W} height={150} gradientColors={['#3B82F6', '#1D4ED8']} gradientId="riskBar" />
             </LinearGradient>
 
-            {/* Weekly Summary Cards */}
+            {/* Weekly Insights */}
             <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text, marginTop: 4 }}>
-              Weekly Insights
+              Session Insights
             </Text>
             {[
-              { label: 'All readings classified Low Risk', value: '6/7', color: '#10B981' },
-              { label: 'Average Risk Score', value: '20.7', color: '#3B82F6' },
-              { label: 'Peak Risk Score', value: '30', color: '#F59E0B' },
-              { label: 'Lowest Risk Score', value: '15', color: '#10B981' },
+              { label: 'Low Risk Readings', value: `${lowCount}/${totalCount}`, color: '#10B981' },
+              { label: 'Average Risk Score', value: `${avgRiskScore}%`, color: '#3B82F6' },
+              { label: 'Peak Risk Score', value: `${peakRiskScore}%`, color: '#F59E0B' },
+              { label: 'Lowest Risk Score', value: `${lowestRiskScore}%`, color: '#10B981' },
             ].map((s, i) => (
               <LinearGradient key={i} colors={isDark ? ['#1E2D3D', '#111827'] : ['#FFF', '#F8FAFC']}
                 style={[styles.insightRow, { borderColor: colors.cardBorder }]}>
@@ -181,4 +239,24 @@ const styles = StyleSheet.create({
   chartTitle: { fontSize: 16, fontWeight: '700', letterSpacing: -0.2 },
   statCard: { flex: 1, borderRadius: 16, borderWidth: 1, padding: 16, gap: 2 },
   insightRow: { borderRadius: 14, borderWidth: 1, padding: 14, flexDirection: 'row', alignItems: 'center' },
+  emptyContainer: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    marginTop: 40
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'center'
+  },
+  emptyDesc: {
+    fontSize: 13,
+    lineHeight: 20,
+    textAlign: 'center',
+    paddingHorizontal: 10
+  }
 });

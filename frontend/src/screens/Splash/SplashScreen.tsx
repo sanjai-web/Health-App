@@ -9,13 +9,13 @@ import Animated, {
   withSequence,
   withSpring,
   Easing,
-  runOnJS,
 } from 'react-native-reanimated';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { StatusBar } from 'expo-status-bar';
+import { auth } from '../../config/firebase';
 
 const { width, height } = Dimensions.get('window');
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Splash'>;
@@ -48,7 +48,11 @@ export default function SplashScreen() {
   const dotsOpacity = useSharedValue(0);
 
   const navigate = () => {
-    navigation.replace('Onboarding');
+    if (auth.currentUser) {
+      navigation.replace('Main');
+    } else {
+      navigation.replace('Onboarding');
+    }
   };
 
   useEffect(() => {
@@ -75,7 +79,7 @@ export default function SplashScreen() {
     dotsOpacity.value = withDelay(1600, withTiming(1, { duration: 400 }));
 
     // Navigate after 2.8s
-    const timer = setTimeout(() => runOnJS(navigate)(), 2800);
+    const timer = setTimeout(() => navigate(), 2800);
     return () => clearTimeout(timer);
   }, []);
 

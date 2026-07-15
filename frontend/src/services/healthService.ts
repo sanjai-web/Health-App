@@ -4,7 +4,8 @@
 // Real-time updates replicate Firebase Realtime Database.
 // ============================================================
 
-import { getDatabase, ref, onValue, get, set, push } from 'firebase/database';
+import { ref, onValue, get, set } from 'firebase/database';
+import { app, auth, db } from '../config/firebase';
 import { HealthRecord, Notification, NOTIFICATIONS } from '../constants/mockData';
 
 type RealtimeCallback = (data: HealthRecord) => void;
@@ -16,8 +17,11 @@ class HealthService {
    * Subscribe to live real-time updates from Firebase.
    */
   subscribeToLatest(callback: RealtimeCallback): () => void {
-    const db = getDatabase();
-    const healthRef = ref(db, 'health_records');
+    const uid = auth.currentUser?.uid;
+    
+    // Subscribe to the authenticated user's latest vitals (vital signs + AI evaluation)
+    const path = uid ? `users/${uid}/latest_vitals` : 'health_records';
+    const healthRef = ref(db, path);
     
     // Subscribe using the Firebase SDK
     const unsubscribe = onValue(healthRef, (snapshot) => {
@@ -36,8 +40,10 @@ class HealthService {
   }
 
   async getLatestRecord(): Promise<HealthRecord> {
-    const db = getDatabase();
-    const healthRef = ref(db, 'health_records');
+    const uid = auth.currentUser?.uid;
+    
+    const path = uid ? `users/${uid}/latest_vitals` : 'health_records';
+    const healthRef = ref(db, path);
     const snapshot = await get(healthRef);
     if (snapshot.exists()) {
       return {
@@ -49,8 +55,10 @@ class HealthService {
   }
 
   async getAllRecords(): Promise<HealthRecord[]> {
-    const db = getDatabase();
-    const historyRef = ref(db, 'history');
+    const uid = auth.currentUser?.uid;
+    
+    const path = uid ? `users/${uid}/history` : 'history';
+    const historyRef = ref(db, path);
     const snapshot = await get(historyRef);
     if (snapshot.exists()) {
       const rawData = snapshot.val();
@@ -65,8 +73,10 @@ class HealthService {
   }
 
   async getRecordById(id: string): Promise<HealthRecord | null> {
-    const db = getDatabase();
-    const historyRef = ref(db, `history/${id}`);
+    const uid = auth.currentUser?.uid;
+    
+    const path = uid ? `users/${uid}/history/${id}` : `history/${id}`;
+    const historyRef = ref(db, path);
     const snapshot = await get(historyRef);
     if (snapshot.exists()) {
       return {
@@ -89,9 +99,9 @@ class HealthService {
 
   /**
    * Push new measurement values directly to Firebase (triggers the backend AI).
+   * Note: This simulates the physical hardware vitals sensor, so it writes to the global node.
    */
   async triggerMeasurement(vitals: Partial<HealthRecord>): Promise<HealthRecord> {
-    const db = getDatabase();
     const healthRef = ref(db, 'health_records');
     const updatedRecord = {
       bodyTemperature: vitals.bodyTemperature || 36.8,
@@ -114,8 +124,6 @@ class HealthService {
    * Firebase Connection status specs.
    */
   async getDeviceStatus() {
-    const db = getDatabase();
-    // Use Firebase .info/connected path to check real-time connection status
     const connectedRef = ref(db, '.info/connected');
     const snapshot = await get(connectedRef);
     const isConnected = snapshot.val() === true;

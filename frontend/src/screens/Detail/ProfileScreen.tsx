@@ -6,9 +6,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../hooks/useTheme';
 import Header from '../../components/common/Header';
 import { StatusBar } from 'expo-status-bar';
-import { User, Heart, Calendar, MapPin, Phone, Mail, Shield, Edit2, Check, X } from 'lucide-react-native';
+import { User, Heart, Calendar, MapPin, Phone, Mail, Shield, Edit2, Check, X, Activity } from 'lucide-react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { getDatabase, ref, set, get } from 'firebase/database';
+import { ref, set, get } from 'firebase/database';
+import { auth, db } from '../../config/firebase';
 
 // Memory fallback cache
 let cachedProfile = {
@@ -21,6 +22,12 @@ let cachedProfile = {
   bloodType: 'O-Positive',
   conditions: 'None reported',
   heightWeight: '178 cm / 72 kg',
+  sex: 'Male',
+  smokingStatus: 'Non-smoker',
+  activityLevel: 'Active',
+  medications: 'None',
+  emergencyContact: 'Jane River (+1 555-019-2835)',
+  pastHealthIssues: 'None'
 };
 
 function AvatarIllustration({ color }: { color: string }) {
@@ -90,6 +97,61 @@ function ProfileField({
   );
 }
 
+interface ProfileSelectorFieldProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  options: string[];
+  onSelect: (val: string) => void;
+  isEditing: boolean;
+  color?: string;
+}
+
+function ProfileSelectorField({
+  icon,
+  label,
+  value,
+  options,
+  onSelect,
+  isEditing,
+  color = '#3B82F6',
+}: ProfileSelectorFieldProps) {
+  const { colors, isDark } = useTheme();
+
+  return (
+    <View style={[styles.field, { borderBottomColor: colors.cardBorder }]}>
+      <View style={[styles.fieldIcon, { backgroundColor: `${color}18` }]}>{icon}</View>
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 10, color: colors.textMuted, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+          {label}
+        </Text>
+        {isEditing ? (
+          <View style={styles.selectorContainer}>
+            {options.map(opt => (
+              <TouchableOpacity
+                key={opt}
+                onPress={() => onSelect(opt)}
+                style={[
+                  styles.chip,
+                  value === opt ? { backgroundColor: color } : { backgroundColor: isDark ? '#1A2235' : '#F1F5F9', borderColor: colors.cardBorder }
+                ]}
+              >
+                <Text style={[styles.chipText, value === opt ? { color: '#FFF' } : { color: colors.text }]}>
+                  {opt}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : (
+          <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text, marginTop: 4 }}>
+            {value.trim() === '' ? '— Not set —' : value}
+          </Text>
+        )}
+      </View>
+    </View>
+  );
+}
+
 export default function ProfileScreen() {
   const { colors, isDark } = useTheme();
   const [isEditing, setIsEditing] = useState(false);
@@ -105,13 +167,19 @@ export default function ProfileScreen() {
   const [bloodType, setBloodType] = useState('');
   const [conditions, setConditions] = useState('');
   const [heightWeight, setHeightWeight] = useState('');
+  const [sex, setSex] = useState('');
+  const [smokingStatus, setSmokingStatus] = useState('');
+  const [activityLevel, setActivityLevel] = useState('');
+  const [medications, setMedications] = useState('');
+  const [emergencyContact, setEmergencyContact] = useState('');
+  const [pastHealthIssues, setPastHealthIssues] = useState('');
 
   // Fetch profile details from Firebase when screen mounts
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const db = getDatabase();
-        const profileRef = ref(db, 'user_profile');
+        const uid = auth.currentUser?.uid;
+        const profileRef = ref(db, uid ? `users/${uid}/profile` : 'user_profile');
         const snapshot = await get(profileRef);
         if (snapshot.exists()) {
           const val = snapshot.val();
@@ -124,6 +192,12 @@ export default function ProfileScreen() {
           setBloodType(val.bloodType || '');
           setConditions(val.conditions || '');
           setHeightWeight(val.heightWeight || '');
+          setSex(val.sex || '');
+          setSmokingStatus(val.smokingStatus || '');
+          setActivityLevel(val.activityLevel || '');
+          setMedications(val.medications || '');
+          setEmergencyContact(val.emergencyContact || '');
+          setPastHealthIssues(val.pastHealthIssues || '');
           cachedProfile = val;
         } else {
           // Fallback to defaults
@@ -136,6 +210,12 @@ export default function ProfileScreen() {
           setBloodType(cachedProfile.bloodType);
           setConditions(cachedProfile.conditions);
           setHeightWeight(cachedProfile.heightWeight);
+          setSex(cachedProfile.sex);
+          setSmokingStatus(cachedProfile.smokingStatus);
+          setActivityLevel(cachedProfile.activityLevel);
+          setMedications(cachedProfile.medications);
+          setEmergencyContact(cachedProfile.emergencyContact);
+          setPastHealthIssues(cachedProfile.pastHealthIssues);
         }
       } catch (err) {
         console.error('Failed to fetch profile from Firebase:', err);
@@ -149,6 +229,12 @@ export default function ProfileScreen() {
         setBloodType(cachedProfile.bloodType);
         setConditions(cachedProfile.conditions);
         setHeightWeight(cachedProfile.heightWeight);
+        setSex(cachedProfile.sex);
+        setSmokingStatus(cachedProfile.smokingStatus);
+        setActivityLevel(cachedProfile.activityLevel);
+        setMedications(cachedProfile.medications);
+        setEmergencyContact(cachedProfile.emergencyContact);
+        setPastHealthIssues(cachedProfile.pastHealthIssues);
       } finally {
         setLoading(false);
       }
@@ -164,8 +250,8 @@ export default function ProfileScreen() {
     
     setLoading(true);
     try {
-      const db = getDatabase();
-      const profileRef = ref(db, 'user_profile');
+      const uid = auth.currentUser?.uid;
+      const profileRef = ref(db, uid ? `users/${uid}/profile` : 'user_profile');
       const updatedProfile = {
         fullName,
         age,
@@ -176,6 +262,16 @@ export default function ProfileScreen() {
         bloodType,
         conditions,
         heightWeight,
+        sex,
+        smokingStatus,
+        activityLevel,
+        medications,
+        emergencyContact,
+        pastHealthIssues,
+        // Preserve FCM details if they exist in cache
+        fcmToken: (cachedProfile as any).fcmToken || '',
+        latitude: (cachedProfile as any).latitude || null,
+        longitude: (cachedProfile as any).longitude || null,
       };
 
       await set(profileRef, updatedProfile);
@@ -199,6 +295,12 @@ export default function ProfileScreen() {
     setBloodType(cachedProfile.bloodType);
     setConditions(cachedProfile.conditions);
     setHeightWeight(cachedProfile.heightWeight);
+    setSex(cachedProfile.sex);
+    setSmokingStatus(cachedProfile.smokingStatus);
+    setActivityLevel(cachedProfile.activityLevel);
+    setMedications(cachedProfile.medications);
+    setEmergencyContact(cachedProfile.emergencyContact);
+    setPastHealthIssues(cachedProfile.pastHealthIssues);
     setIsEditing(false);
   };
 
@@ -273,6 +375,15 @@ export default function ProfileScreen() {
               value={fullName}
               onChangeText={setFullName}
               isEditing={isEditing}
+            />
+            <ProfileSelectorField
+              icon={<User size={16} color="#3B82F6" />}
+              label="Biological Sex"
+              value={sex}
+              options={['Male', 'Female', 'Other']}
+              onSelect={setSex}
+              isEditing={isEditing}
+              color="#3B82F6"
             />
             <ProfileField
               icon={<Calendar size={16} color="#8B5CF6" />}
@@ -349,6 +460,57 @@ export default function ProfileScreen() {
               onChangeText={setConditions}
               isEditing={isEditing}
               color="#3B82F6"
+            />
+            <ProfileField
+              icon={<Heart size={16} color="#EF4444" />}
+              label="Active Medications"
+              value={medications}
+              onChangeText={setMedications}
+              isEditing={isEditing}
+              color="#EF4444"
+            />
+            <ProfileField
+              icon={<Shield size={16} color="#F59E0B" />}
+              label="Past Health Issues"
+              value={pastHealthIssues}
+              onChangeText={setPastHealthIssues}
+              isEditing={isEditing}
+              color="#F59E0B"
+            />
+          </LinearGradient>
+
+          {/* Lifestyle & Emergency Info */}
+          <LinearGradient
+            colors={isDark ? ['#1E2D3D', '#111827'] : ['#FFF', '#F8FAFC']}
+            style={[styles.card, { borderColor: colors.cardBorder }]}
+          >
+            <Text style={[styles.cardTitle, { color: colors.text }]}>Lifestyle & Emergency Details</Text>
+
+            <ProfileSelectorField
+              icon={<Activity size={16} color="#F59E0B" />}
+              label="Smoking Status"
+              value={smokingStatus}
+              options={['Smoker', 'Non-smoker', 'Former Smoker']}
+              onSelect={setSmokingStatus}
+              isEditing={isEditing}
+              color="#F59E0B"
+            />
+            <ProfileSelectorField
+              icon={<Activity size={16} color="#10B981" />}
+              label="Activity Level"
+              value={activityLevel}
+              options={['Sedentary', 'Moderate', 'Active']}
+              onSelect={setActivityLevel}
+              isEditing={isEditing}
+              color="#10B981"
+            />
+            <ProfileField
+              icon={<Phone size={16} color="#EF4444" />}
+              label="Emergency Contact"
+              value={emergencyContact}
+              onChangeText={setEmergencyContact}
+              isEditing={isEditing}
+              color="#EF4444"
             />
           </LinearGradient>
 
@@ -435,4 +597,21 @@ const styles = StyleSheet.create({
   },
   saveBtn: {},
   privacyNote: { flexDirection: 'row', borderRadius: 12, borderWidth: 1, padding: 12, alignItems: 'flex-start' },
+  selectorContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 6,
+    flexWrap: 'wrap'
+  },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  chipText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
 });

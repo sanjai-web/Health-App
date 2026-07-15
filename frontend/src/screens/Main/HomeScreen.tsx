@@ -8,10 +8,11 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
   Heart, Thermometer, Wind, Activity, Brain,
-  Bell, ChevronRight, Zap
+  Bell, ChevronRight, Zap, Cloud
 } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { useLatestHealthRecord } from '../../hooks/useHealthData';
+import { useAirQuality } from '../../hooks/useAirQuality';
 import { RootStackParamList } from '../../navigation/types';
 import MetricCard from '../../components/dashboard/MetricCard';
 import ProgressRing from '../../components/dashboard/ProgressRing';
@@ -27,29 +28,7 @@ function formatTime(iso: string) {
     ' · ' + d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-// Clinical evaluation helper functions for vital status labels
-function getHeartRateStatus(hr: number) {
-  if (hr < 60) return { status: 'warning' as const, statusLabel: 'Low' };
-  if (hr > 100) return { status: 'warning' as const, statusLabel: 'Elevated' };
-  return { status: 'normal' as const, statusLabel: 'Optimal' };
-}
-
-function getTemperatureStatus(temp: number) {
-  if (temp < 36.1) return { status: 'warning' as const, statusLabel: 'Low' };
-  if (temp > 37.2) return { status: 'warning' as const, statusLabel: 'Elevated' };
-  return { status: 'normal' as const, statusLabel: 'Normal' };
-}
-
-function getSpO2Status(spo2: number) {
-  if (spo2 < 95) return { status: 'warning' as const, statusLabel: 'Low' };
-  return { status: 'normal' as const, statusLabel: 'Excellent' };
-}
-
-function getPIStatus(pi: number) {
-  if (pi < 1.0) return { status: 'warning' as const, statusLabel: 'Low' };
-  if (pi > 10.0) return { status: 'warning' as const, statusLabel: 'Elevated' };
-  return { status: 'normal' as const, statusLabel: 'Normal' };
-}
+import { getHeartRateStatus, getTemperatureStatus, getSpO2Status, getPIStatus } from '../../utils/clinicalRanges';
 
 // UI helper functions for AI risk color-coding
 const getRiskColor = (risk: string) => {
@@ -64,50 +43,76 @@ const getRiskGradient = (risk: string) => {
   return ['#10B981', '#059669'];
 };
 
+// UI helper function for Air Quality Index ranges
+const getAqiStatus = (aqi: number) => {
+  if (aqi <= 50) return { status: 'normal' as const, statusLabel: 'Good' };
+  if (aqi <= 100) return { status: 'warning' as const, statusLabel: 'Moderate' };
+  if (aqi <= 150) return { status: 'warning' as const, statusLabel: 'Sensitive' };
+  if (aqi <= 200) return { status: 'critical' as const, statusLabel: 'Unhealthy' };
+  return { status: 'critical' as const, statusLabel: 'Hazardous' };
+};
+
 export default function HomeScreen() {
   const { colors, isDark } = useTheme();
   const { data, loading } = useLatestHealthRecord();
+  const { aqi, city, loading: aqiLoading, error: aqiError } = useAirQuality();
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
 
-  const metrics = data ? [
-    {
-      label: 'Heart Rate',
-      value: data.heartRate,
-      unit: 'BPM',
-      icon: <Heart size={22} color="#FFF" />,
-      gradientColors: ['#FF6B8A', '#C2185B'],
-      route: 'HeartRateDetail' as const,
-      ...getHeartRateStatus(data.heartRate),
-    },
-    {
-      label: 'Temperature',
-      value: data.bodyTemperature,
-      unit: '°C',
-      icon: <Thermometer size={22} color="#FFF" />,
-      gradientColors: ['#FF9500', '#E65100'],
-      route: 'TemperatureDetail' as const,
-      ...getTemperatureStatus(data.bodyTemperature),
-    },
-    {
-      label: 'SpO₂',
-      value: data.spo2,
-      unit: '%',
-      icon: <Wind size={22} color="#FFF" />,
-      gradientColors: ['#00D4FF', '#0288D1'],
-      route: 'SpO2Detail' as const,
-      ...getSpO2Status(data.spo2),
-    },
-    {
-      label: 'Perfusion Index',
-      value: data.perfusionIndex,
-      unit: '%',
-      icon: <Activity size={22} color="#FFF" />,
-      gradientColors: ['#8B5CF6', '#5B21B6'],
-      route: 'PerfusionDetail' as const,
-      ...getPIStatus(data.perfusionIndex),
-    },
-  ] : [];
+  const aqiValue = aqiLoading ? '--' : aqi !== null ? aqi : '--';
+  const aqiLabel = aqiLoading ? 'Loading...' : aqiError ? 'Location Error' : (city || 'Local Area');
+  const aqiStatus = aqi !== null ? getAqiStatus(aqi) : { status: 'normal' as const, statusLabel: 'No Data' };
+
+  const metrics = [];
+  if (data) {
+    metrics.push(
+      {
+        label: 'Heart Rate',
+        value: data.heartRate,
+        unit: 'BPM',
+        icon: <Heart size={22} color="#FFF" />,
+        gradientColors: ['#FF6B8A', '#C2185B'],
+        route: 'HeartRateDetail' as const,
+        ...getHeartRateStatus(data.heartRate),
+      },
+      {
+        label: 'Temperature',
+        value: data.bodyTemperature,
+        unit: '°C',
+        icon: <Thermometer size={22} color="#FFF" />,
+        gradientColors: ['#FF9500', '#E65100'],
+        route: 'TemperatureDetail' as const,
+        ...getTemperatureStatus(data.bodyTemperature),
+      },
+      {
+        label: 'SpO₂',
+        value: data.spo2,
+        unit: '%',
+        icon: <Wind size={22} color="#FFF" />,
+        gradientColors: ['#00D4FF', '#0288D1'],
+        route: 'SpO2Detail' as const,
+        ...getSpO2Status(data.spo2),
+      },
+      {
+        label: 'Perfusion Index',
+        value: data.perfusionIndex,
+        unit: '%',
+        icon: <Activity size={22} color="#FFF" />,
+        gradientColors: ['#8B5CF6', '#5B21B6'],
+        route: 'PerfusionDetail' as const,
+        ...getPIStatus(data.perfusionIndex),
+      },
+      {
+        label: `AQI: ${aqiLabel}`,
+        value: aqiValue,
+        unit: '',
+        icon: <Cloud size={22} color="#FFF" />,
+        gradientColors: ['#34D399', '#059669'], // Emerald green gradient
+        route: undefined,
+        ...aqiStatus,
+      }
+    );
+  }
 
   const riskColor = data ? getRiskColor(data.riskLevel) : '#10B981';
 
@@ -217,7 +222,7 @@ export default function HomeScreen() {
                 gradientColors={m.gradientColors}
                 status={m.status}
                 statusLabel={m.statusLabel}
-                onPress={() => navigation.navigate(m.route)}
+                onPress={m.route ? () => navigation.navigate(m.route) : undefined}
               />
             ))}
           </View>

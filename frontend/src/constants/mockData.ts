@@ -11,7 +11,7 @@ export interface HealthRecord {
   perfusionIndex: number;   // %
   signalStrength: number;   // %
   healthRiskScore: number;  // 0–100 % (AI Prediction)
-  riskLevel: 'Low' | 'Medium' | 'High';
+  riskLevel: 'Low' | 'Medium' | 'Moderate' | 'High';
 }
 
 export interface VitalRange {

@@ -6,11 +6,13 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
   User, Bell, Database, Info, Moon, Sun,
-  ChevronRight, Shield, FileText, Cpu,
+  ChevronRight, Shield, FileText, Cpu, XCircle
 } from 'lucide-react-native';
 import { useTheme, ThemeContext } from '../../hooks/useTheme';
 import { RootStackParamList } from '../../navigation/types';
 import { StatusBar } from 'expo-status-bar';
+import { signOut } from 'firebase/auth';
+import { auth } from '../../config/firebase';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -49,6 +51,18 @@ export default function SettingsScreen() {
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Onboarding' as any }],
+      });
+    } catch (e) {
+      console.error('Logout error:', e);
+    }
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
@@ -78,6 +92,13 @@ export default function SettingsScreen() {
             color="#F59E0B"
             onPress={() => navigation.navigate('Notifications')}
           />
+          <SettingsRow
+            icon={<XCircle size={18} color="#EF4444" />}
+            label="Log Out"
+            sublabel="Sign out of your account"
+            color="#EF4444"
+            onPress={handleLogout}
+          />
         </View>
 
         {/* Data section */}
@@ -89,6 +110,13 @@ export default function SettingsScreen() {
             sublabel="Generate health summary"
             color="#EC4899"
             onPress={() => navigation.navigate('MedicalReport')}
+          />
+          <SettingsRow
+            icon={<Database size={18} color="#10B981" />}
+            label="Upload Medical Records"
+            sublabel="Upload PDF medical reports"
+            color="#10B981"
+            onPress={() => navigation.navigate('UploadReport')}
           />
           <SettingsRow
             icon={<Shield size={18} color="#64748B" />}

@@ -11,32 +11,9 @@ import { RootStackParamList } from '../../navigation/types';
 import { Heart, Thermometer, Wind, Activity, Brain, ChevronRight } from 'lucide-react-native';
 import ProgressRing from '../../components/dashboard/ProgressRing';
 import { CardSkeleton } from '../../components/common/Skeleton';
+import { getHeartRateStatus, getTemperatureStatus, getSpO2Status, getPIStatus } from '../../utils/clinicalRanges';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
-
-// Clinical status helper functions
-function getHeartRateStatus(hr: number) {
-  if (hr < 60) return { status: 'Low', statusColor: '#F59E0B' };
-  if (hr > 100) return { status: 'Elevated', statusColor: '#EF4444' };
-  return { status: 'Optimal', statusColor: '#10B981' };
-}
-
-function getTemperatureStatus(temp: number) {
-  if (temp < 36.1) return { status: 'Low', statusColor: '#F59E0B' };
-  if (temp > 37.2) return { status: 'Elevated', statusColor: '#EF4444' };
-  return { status: 'Normal', statusColor: '#10B981' };
-}
-
-function getSpO2Status(spo2: number) {
-  if (spo2 < 95) return { status: 'Low', statusColor: '#EF4444' };
-  return { status: 'Excellent', statusColor: '#10B981' };
-}
-
-function getPIStatus(pi: number) {
-  if (pi < 1.0) return { status: 'Low', statusColor: '#F59E0B' };
-  if (pi > 10.0) return { status: 'Elevated', statusColor: '#EF4444' };
-  return { status: 'Normal', statusColor: '#10B981' };
-}
 
 const getRiskColor = (risk: string) => {
   if (risk === 'High') return '#EF4444';
@@ -51,12 +28,12 @@ interface VitalRowProps {
   icon: React.ReactNode;
   gradientColors: string[];
   progress: number;
-  status: string;
+  statusLabel: string;
   statusColor: string;
   route: keyof RootStackParamList;
 }
 
-function VitalRow({ label, value, unit, icon, gradientColors, progress, status, statusColor, route }: VitalRowProps) {
+function VitalRow({ label, value, unit, icon, gradientColors, progress, statusLabel, statusColor, route }: VitalRowProps) {
   const { colors, isDark } = useTheme();
   const navigation = useNavigation<Nav>();
 
@@ -82,7 +59,7 @@ function VitalRow({ label, value, unit, icon, gradientColors, progress, status, 
           </View>
           <View style={[styles.statusPill, { backgroundColor: `${statusColor}18` }]}>
             <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-            <Text style={{ fontSize: 10, color: statusColor, fontWeight: '600' }}>{status}</Text>
+            <Text style={{ fontSize: 10, color: statusColor, fontWeight: '600' }}>{statusLabel}</Text>
           </View>
         </View>
 

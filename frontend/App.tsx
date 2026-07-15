@@ -8,21 +8,6 @@ import AppNavigator from './src/navigation/AppNavigator';
 import { ThemeContext, ThemeMode } from './src/hooks/useTheme';
 import { Colors, Gradients, Shadows } from './src/constants/theme';
 
-import { initializeApp, getApps } from 'firebase/app';
-
-const firebaseConfig = {
-  apiKey: "AIzaSyCBLdEB43paTY-KoElImBaX5NSK9Qlef_U",
-  authDomain: "in-1-health-check.firebaseapp.com",
-  databaseURL: "https://in-1-health-check-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "in-1-health-check",
-  storageBucket: "in-1-health-check.firebasestorage.app",
-  appId: "1:805963694011:android:30dcc5640fe9e5e3844e9e"
-};
-
-if (getApps().length === 0) {
-  initializeApp(firebaseConfig);
-}
-
 export default function App() {
   const [mode, setMode] = useState<ThemeMode>('light');
 
